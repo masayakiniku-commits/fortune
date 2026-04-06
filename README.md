@@ -1,1 +1,1 @@
-# fortune
+# fortune-bot
