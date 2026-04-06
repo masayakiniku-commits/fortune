@@ -2,6 +2,8 @@ import requests
 import os
 from bs4 import BeautifulSoup
 
+print("値確認:", os.environ.get("DISCORD_WEBHOOK"))
+
 WEBHOOK = os.environ.get("DISCORD_WEBHOOK")
 
 def get_fortune():
