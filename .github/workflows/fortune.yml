@@ -23,7 +23,7 @@ jobs:
 
       - name: run
         env:   # ←★これ追加
-          WEBHOOK: ${{ secrets.WEBHOOK }}
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           echo "===== 実行開始 ====="
           python main.py
