@@ -1,40 +1,42 @@
 import requests
-from bs4 import BeautifulSoup
-import datetime
 import os
+from bs4 import BeautifulSoup
 
 WEBHOOK = os.environ.get("DISCORD_WEBHOOK")
 
+def get_fortune():
+    url = "https://uranaitv.jp/content/999"  # 安定して取れる例
+    res = requests.get(url)
+    soup = BeautifulSoup(res.text, "html.parser")
+
+    items = soup.select("h3")[:3]  # 上位3件だけ
+    result = []
+
+    for i, item in enumerate(items, 1):
+        text = item.text.strip()
+        if text:
+            result.append(f"{i}位：{text}")
+
+    return result
+
 def send(msg):
+    if not WEBHOOK:
+        print("WEBHOOK未設定")
+        return
+
     requests.post(WEBHOOK, json={"content": msg})
 
-def get_goo_libra():
-    try:
-        url = "https://fortune.goo.ne.jp/12seiza/"
-        res = requests.get(url, timeout=10)
-        soup = BeautifulSoup(res.text, "html.parser")
-
-        items = soup.select(".ranking li")
-
-        for i, item in enumerate(items):
-            text = item.get_text()
-            if "てんびん座" in text:
-                return i + 1
-
-        return None
-
-    except:
-        return None
-
 def main():
-    today = datetime.date.today()
+    print("===== 起動確認 =====")
 
-    rank = get_goo_libra()
+    data = get_fortune()
 
-    if rank:
-        msg = f"🔮 てんびん座（{today}）\n👉 {rank}位 / 12位"
-    else:
-        msg = f"⚠️ 占い取得失敗（{today}）"
+    if not data:
+        send("取得失敗")
+        return
+
+    msg = "【占いランキング】\n" + "\n".join(data)
+    print(msg)
 
     send(msg)
 
