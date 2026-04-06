@@ -1,5 +1,5 @@
 import requests
-from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
 import datetime
 import os
 
@@ -12,70 +12,50 @@ def send(msg):
     except Exception as e:
         print("送信エラー:", e)
 
-def get_yahoo():
+# ★ 安定：RSS取得
+def get_rss():
     try:
-        url = "https://fortune.yahoo.co.jp/12astro/libra"
+        url = "https://uranaitv.jp/feed"
         res = requests.get(url, timeout=10)
-        soup = BeautifulSoup(res.text, "html.parser")
 
-        items = soup.select(".ranking li")
+        root = ET.fromstring(res.content)
+
+        items = root.findall(".//item")
+
         results = []
 
         for i, item in enumerate(items[:3]):
-            txt = item.get_text(strip=True)
-            results.append(f"{i+1}位 {txt}")
+            title = item.find("title").text
+            results.append(f"{i+1}位 {title}")
 
-        return ("Yahoo", results if results else ["取得失敗"])
+        return ("占いTV", results if results else ["取得失敗"])
 
-    except:
-        return ("Yahoo", ["エラー"])
+    except Exception as e:
+        print("RSSエラー:", e)
+        return ("占いTV", ["エラー"])
 
-def get_fashion():
-    try:
-        url = "https://www.fashion-press.net/horoscope/libra"
-        res = requests.get(url, timeout=10)
-        soup = BeautifulSoup(res.text, "html.parser")
-
-        items = soup.select(".horoscope-ranking li")
-        results = []
-
-        for i, item in enumerate(items[:3]):
-            txt = item.get_text(strip=True)
-            results.append(f"{i+1}位 {txt}")
-
-        return ("Fashion", results if results else ["取得失敗"])
-
-    except:
-        return ("Fashion", ["エラー"])
-
-def get_goo():
-    try:
-        url = "https://fortune.goo.ne.jp/12seiza/libra/"
-        res = requests.get(url, timeout=10)
-        soup = BeautifulSoup(res.text, "html.parser")
-
-        items = soup.select(".ranking li")
-        results = []
-
-        for i, item in enumerate(items[:3]):
-            txt = item.get_text(strip=True)
-            results.append(f"{i+1}位 {txt}")
-
-        return ("goo", results if results else ["取得失敗"])
-
-    except:
-        return ("goo", ["エラー"])
+# ★ 保険（絶対通知）
+def fallback():
+    return ("システム", [
+        "1位 今日はバランスがカギ",
+        "2位 人間関係に良い流れ",
+        "3位 焦らずが吉"
+    ])
 
 def main():
     print("===== 起動確認 =====")
 
     today = datetime.date.today()
-    msg = f"🔮 てんびん座占いランキング（{today}）\n"
+    msg = f"🔮 てんびん座占い（{today}）\n"
 
     results = []
-    results.append(get_yahoo())
-    results.append(get_fashion())
-    results.append(get_goo())
+
+    rss = get_rss()
+    results.append(rss)
+
+    # ★ 取得ダメなら保険発動
+    if "エラー" in str(rss) or "取得失敗" in str(rss):
+        results.append(fallback())
 
     print("取得結果:", results)
 
@@ -84,7 +64,6 @@ def main():
         for d in data:
             msg += d + "\n"
 
-    # ★必ず送信（ここが重要）
     send(msg)
 
 if __name__ == "__main__":
