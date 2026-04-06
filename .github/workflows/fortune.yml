@@ -22,6 +22,8 @@ jobs:
       - run: pip install requests beautifulsoup4
 
       - name: run
+        env:   # ←★これ追加
+          WEBHOOK: ${{ secrets.WEBHOOK }}
         run: |
           echo "===== 実行開始 ====="
           python main.py
