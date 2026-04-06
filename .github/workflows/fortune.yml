@@ -1,0 +1,25 @@
+name: fortune-bot
+
+on:
+  schedule:
+    - cron: '0 22 * * *'  # 日本時間7:00
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Python setup
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - run: pip install requests beautifulsoup4
+
+      - name: Run script
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: python main.py
