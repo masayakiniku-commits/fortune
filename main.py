@@ -1,33 +1,74 @@
 import requests
 import os
 from bs4 import BeautifulSoup
+import json
 
-# 環境変数取得（統一）
 WEBHOOK = os.environ.get("DISCORD_WEBHOOK")
+CACHE_FILE = "cache.json"
 
-def get_fortune():
-    url = "https://uranaitv.jp/content/999"
-    
+
+# -----------------------------
+# ① メイン：めざまし占い
+# -----------------------------
+def get_fortune_main():
+    url = "https://www.fujitv.co.jp/meza/uranai/"
     try:
         res = requests.get(url, timeout=10)
-        res.raise_for_status()
+        soup = BeautifulSoup(res.text, "html.parser")
+        items = soup.select(".ranking li")
+
+        result = []
+        for i, item in enumerate(items[:3], 1):
+            text = item.text.strip()
+            if text:
+                result.append(f"{i}位：{text}")
+
+        return result
     except Exception as e:
-        print("取得エラー:", e)
+        print("メイン失敗:", e)
         return []
 
-    soup = BeautifulSoup(res.text, "html.parser")
 
-    items = soup.select("h3")[:3]
-    result = []
+# -----------------------------
+# ② サブ：別占いサイト
+# -----------------------------
+def get_fortune_sub():
+    url = "https://uranai.tv/"
+    try:
+        res = requests.get(url, timeout=10)
+        soup = BeautifulSoup(res.text, "html.parser")
+        items = soup.select("h3")
 
-    for i, item in enumerate(items, 1):
-        text = item.text.strip()
-        if text:
-            result.append(f"{i}位：{text}")
+        result = []
+        for i, item in enumerate(items[:3], 1):
+            text = item.text.strip()
+            if text:
+                result.append(f"{i}位：{text}")
 
-    return result
+        return result
+    except Exception as e:
+        print("サブ失敗:", e)
+        return []
 
 
+# -----------------------------
+# ③ キャッシュ保存
+# -----------------------------
+def save_cache(data):
+    with open(CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+
+
+def load_cache():
+    if not os.path.exists(CACHE_FILE):
+        return []
+    with open(CACHE_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+# -----------------------------
+# ④ Discord送信
+# -----------------------------
 def send(msg):
     if not WEBHOOK:
         print("WEBHOOK未設定")
@@ -40,15 +81,27 @@ def send(msg):
         print("送信エラー:", e)
 
 
+# -----------------------------
+# ⑤ メイン処理
+# -----------------------------
 def main():
     print("===== 起動確認 =====")
-    print("Webhook確認:", "OK" if WEBHOOK else "NG")
 
-    data = get_fortune()
+    data = get_fortune_main()
 
     if not data:
-        send("占い取得失敗")
+        print("→ サブサイト試行")
+        data = get_fortune_sub()
+
+    if not data:
+        print("→ キャッシュ使用")
+        data = load_cache()
+
+    if not data:
+        send("占い取得完全失敗（全滅）")
         return
+
+    save_cache(data)
 
     msg = "【占いランキング】\n" + "\n".join(data)
     print(msg)
