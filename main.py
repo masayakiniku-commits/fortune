@@ -1,20 +1,20 @@
 import requests
 import os
 from bs4 import BeautifulSoup
-import json
 
 WEBHOOK = os.environ.get("DISCORD_WEBHOOK")
-CACHE_FILE = "cache.json"
 
 
 # -----------------------------
-# ① メイン：めざまし占い
+# ① めざまし占い（メイン）
 # -----------------------------
-def get_fortune_main():
+def get_mezamashi():
     url = "https://www.fujitv.co.jp/meza/uranai/"
     try:
         res = requests.get(url, timeout=10)
+        res.raise_for_status()
         soup = BeautifulSoup(res.text, "html.parser")
+
         items = soup.select(".ranking li")
 
         result = []
@@ -23,21 +23,25 @@ def get_fortune_main():
             if text:
                 result.append(f"{i}位：{text}")
 
+        print("めざまし件数:", len(result))
         return result
+
     except Exception as e:
-        print("メイン失敗:", e)
+        print("めざまし失敗:", e)
         return []
 
 
 # -----------------------------
-# ② サブ：別占いサイト
+# ② Yahoo占い（サブ）
 # -----------------------------
-def get_fortune_sub():
-    url = "https://uranai.tv/"
+def get_yahoo():
+    url = "https://fortune.yahoo.co.jp/12astro/"
     try:
         res = requests.get(url, timeout=10)
+        res.raise_for_status()
         soup = BeautifulSoup(res.text, "html.parser")
-        items = soup.select("h3")
+
+        items = soup.select("li")
 
         result = []
         for i, item in enumerate(items[:3], 1):
@@ -45,29 +49,16 @@ def get_fortune_sub():
             if text:
                 result.append(f"{i}位：{text}")
 
+        print("Yahoo件数:", len(result))
         return result
+
     except Exception as e:
-        print("サブ失敗:", e)
+        print("Yahoo失敗:", e)
         return []
 
 
 # -----------------------------
-# ③ キャッシュ保存
-# -----------------------------
-def save_cache(data):
-    with open(CACHE_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False)
-
-
-def load_cache():
-    if not os.path.exists(CACHE_FILE):
-        return []
-    with open(CACHE_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-# -----------------------------
-# ④ Discord送信
+# Discord送信
 # -----------------------------
 def send(msg):
     if not WEBHOOK:
@@ -82,28 +73,22 @@ def send(msg):
 
 
 # -----------------------------
-# ⑤ メイン処理
+# メイン処理
 # -----------------------------
 def main():
     print("===== 起動確認 =====")
 
-    data = get_fortune_main()
+    data = get_mezamashi()
 
     if not data:
-        print("→ サブサイト試行")
-        data = get_fortune_sub()
+        print("→ Yahooへフォールバック")
+        data = get_yahoo()
 
     if not data:
-        print("→ キャッシュ使用")
-        data = load_cache()
+        print("→ 最終フォールバック")
+        data = ["本日の占いは取得できませんでした"]
 
-    if not data:
-        send("占い取得完全失敗（全滅）")
-        return
-
-    save_cache(data)
-
-    msg = "【占いランキング】\n" + "\n".join(data)
+    msg = "【今日の占い】\n" + "\n".join(data)
     print(msg)
 
     send(msg)
