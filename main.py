@@ -1,104 +1,62 @@
 import requests
-import os
 from bs4 import BeautifulSoup
+import os
 
-WEBHOOK = os.environ.get("DISCORD_WEBHOOK")
+WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK")
 
-
-# -----------------------------
-# ① めざまし占い（てんびん座）
-# -----------------------------
-def get_mezamashi():
-    url = "https://www.fujitv.co.jp/meza/uranai/"
+def get_site1():
     try:
-        res = requests.get(url, timeout=10)
-        soup = BeautifulSoup(res.text, "html.parser")
-
-        # てんびん座を含む要素を探す
-        items = soup.select("li")
-        for item in items:
-            text = item.text.strip()
-            if "てんびん座" in text:
-                return f"めざまし：{text}"
-
-    except Exception as e:
-        print("めざまし失敗:", e)
-
-    return None
-
-
-# -----------------------------
-# ② Yahoo占い（てんびん座）
-# -----------------------------
-def get_yahoo():
-    url = "https://fortune.yahoo.co.jp/12astro/libra/"
-    try:
+        url = "https://uranai-daily.com/libra"
         res = requests.get(url, timeout=10)
         soup = BeautifulSoup(res.text, "html.parser")
 
         text = soup.get_text()
-        return "Yahoo：" + text[:120]  # 冒頭だけ
+        return text.strip()[:120]
+    except:
+        return "取得失敗"
 
-    except Exception as e:
-        print("Yahoo失敗:", e)
-
-    return None
-
-
-# -----------------------------
-# ③ 楽天占い（てんびん座）
-# -----------------------------
-def get_rakuten():
-    url = "https://fortune.rakuten.co.jp/"
+def get_site2():
     try:
+        url = "https://fortune.line.me/horoscope/libra/"
         res = requests.get(url, timeout=10)
         soup = BeautifulSoup(res.text, "html.parser")
 
-        items = soup.select("li")
-        for item in items:
-            text = item.text.strip()
-            if "てんびん座" in text:
-                return f"楽天：{text}"
+        text = soup.get_text()
+        return text.strip()[:120]
+    except:
+        return "取得失敗"
 
-    except Exception as e:
-        print("楽天失敗:", e)
+def get_site3():
+    try:
+        url = "https://plaza.rakuten.co.jp/fortune/"
+        res = requests.get(url, timeout=10)
+        soup = BeautifulSoup(res.text, "html.parser")
 
-    return None
+        text = soup.get_text()
+        return text.strip()[:120]
+    except:
+        return "取得失敗"
 
-
-# -----------------------------
-# 送信
-# -----------------------------
 def send(msg):
-    if not WEBHOOK:
-        print("WEBHOOK未設定")
-        return
+    requests.post(WEBHOOK_URL, json={"content": msg})
 
-    res = requests.post(WEBHOOK, json={"content": msg}, timeout=10)
-    print("送信結果:", res.status_code)
-
-
-# -----------------------------
-# メイン
-# -----------------------------
 def main():
     print("===== 起動確認 =====")
 
-    results = []
+    s1 = get_site1()
+    s2 = get_site2()
+    s3 = get_site3()
 
-    for func in [get_mezamashi, get_yahoo, get_rakuten]:
-        r = func()
-        if r:
-            results.append(r)
+    msg = f"""【てんびん座 今日の占い】
 
-    if not results:
-        results = ["てんびん座の占い取得失敗"]
+① {s1}
 
-    msg = "【てんびん座 今日の占い】\n\n" + "\n\n".join(results)
-    print(msg)
+② {s2}
 
+③ {s3}
+"""
     send(msg)
-
+    print("送信完了")
 
 if __name__ == "__main__":
     main()
