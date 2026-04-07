@@ -2,11 +2,8 @@ name: fortune-bot
 
 on:
   schedule:
-    - cron: '0 22 * * *'
+    - cron: '0 22 * * *'  # 日本時間 7:00
   workflow_dispatch:
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   run:
@@ -21,9 +18,9 @@ jobs:
 
       - run: pip install requests beautifulsoup4
 
-      - name: run
-        env:   # ←★これ追加
-          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      - name: 実行
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}  # ←ここ重要
         run: |
           echo "===== 実行開始 ====="
           python main.py
