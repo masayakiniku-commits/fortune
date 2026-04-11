@@ -10,7 +10,7 @@ HEADERS = {
 
 def get_fortune():
     try:
-        url = "https://fortune.yahoo.co.jp/12astro/libra"
+        url = "https://uranai.nosv.org/u.php/honbun/12seiza/"
 
         res = requests.get(url, headers=HEADERS, timeout=10)
 
@@ -21,21 +21,18 @@ def get_fortune():
 
         soup = BeautifulSoup(res.text, "html.parser")
 
-        # 総合運
-        desc = soup.select_one(".yjS .lead")
-        desc_text = desc.text.strip() if desc else "取得失敗"
+        text = soup.get_text()
 
-        # ラッキー系
-        lucky = soup.select(".yjS dl dd")
-        lucky_items = [x.text.strip() for x in lucky]
+        # 天秤座の部分だけ抜き出し
+        if "てんびん座" in text:
+            start = text.find("てんびん座")
+            result = text[start:start+200]
+        else:
+            return None
 
         return f"""【てんびん座 今日の運勢】
 
-■ 総合運：
-{desc_text}
-
-■ ラッキーカラー：{lucky_items[0] if len(lucky_items)>0 else ""}
-■ ラッキーアイテム：{lucky_items[1] if len(lucky_items)>1 else ""}
+{result}
 """
 
     except Exception as e:
@@ -51,7 +48,7 @@ def main():
     result = get_fortune()
 
     if not result:
-        result = "【てんびん座 今日の運勢】\n\n取得失敗（スクレイピング異常）"
+        result = "【てんびん座 今日の運勢】\n\n取得失敗（サイト変更 or 接続エラー）"
 
     send(result)
     print("送信完了")
