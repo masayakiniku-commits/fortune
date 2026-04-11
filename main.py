@@ -12,21 +12,30 @@ def get_fortune():
         soup = BeautifulSoup(res.text, "html.parser")
         text = soup.get_text()
 
-        if "てんびん座" not in text:
+        # デバッグ用
+        print(text[:500])
+
+        # 「てんびん」「天秤」どっちでも拾う
+        keywords = ["てんびん座", "天秤座"]
+
+        start = -1
+        for k in keywords:
+            if k in text:
+                start = text.find(k)
+                break
+
+        if start == -1:
             return None
 
-        # 範囲を広めに取る（ここがポイント）
-        start = text.find("てんびん座")
         raw = text[start:start+500]
 
-        # 整形（ここで完成度決まる）
         lines = []
         for line in raw.splitlines():
             line = line.strip()
             if line and "順位" not in line:
                 lines.append(line)
 
-        result = "\n".join(lines[:8])  # 長すぎ防止
+        result = "\n".join(lines[:8])
 
         return f"""【てんびん座 今日の運勢】
 
