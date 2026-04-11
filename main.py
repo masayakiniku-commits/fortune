@@ -20,15 +20,19 @@ def get_fortune():
             return None
 
         soup = BeautifulSoup(res.text, "html.parser")
-
         text = soup.get_text()
 
-        # 天秤座の部分だけ抜き出し
-        if "てんびん座" in text:
-            start = text.find("てんびん座")
-            result = text[start:start+200]
-        else:
+        # てんびん座の位置を探す
+        if "てんびん座" not in text:
             return None
+
+        start = text.find("てんびん座")
+        end = start + 300
+        raw = text[start:end]
+
+        # 不要な空白除去＆整形
+        lines = [line.strip() for line in raw.splitlines() if line.strip()]
+        result = "\n".join(lines)
 
         return f"""【てんびん座 今日の運勢】
 
@@ -39,8 +43,13 @@ def get_fortune():
         print("取得失敗:", e)
         return None
 
+
 def send(msg):
-    requests.post(WEBHOOK_URL, json={"content": msg})
+    try:
+        requests.post(WEBHOOK_URL, json={"content": msg}, timeout=10)
+    except Exception as e:
+        print("送信失敗:", e)
+
 
 def main():
     print("===== 起動確認 =====")
@@ -48,10 +57,11 @@ def main():
     result = get_fortune()
 
     if not result:
-        result = "【てんびん座 今日の運勢】\n\n取得失敗（サイト変更 or 接続エラー）"
+        result = "【てんびん座 今日の運勢】\n\n取得失敗（サイト変更 or 一時エラー）"
 
     send(result)
     print("送信完了")
+
 
 if __name__ == "__main__":
     main()
