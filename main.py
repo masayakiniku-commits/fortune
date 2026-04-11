@@ -1,29 +1,20 @@
-import requests
-import os
-
-WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK")
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0"
-}
-
 def get_fortune():
     try:
-        url = "https://aztro.sameerkumar.website/"
-        params = {
-            "sign": "libra",
-            "day": "today"
-        }
+        url = "https://aztro.sameerkumar.website/?sign=libra&day=today"
 
-        res = requests.post(url, params=params, headers=HEADERS, timeout=10)
+        res = requests.post(url, headers=HEADERS, timeout=10)
 
         print("status:", res.status_code)
-        print("body:", res.text[:100])  # ←デバッグ
+        print("body:", res.text[:100])
 
         if res.status_code != 200:
             return None
 
-        data = res.json()
+        try:
+            data = res.json()
+        except:
+            print("JSON変換失敗:", res.text[:200])
+            return None
 
         return f"""【てんびん座 今日の運勢】
 
@@ -36,20 +27,3 @@ def get_fortune():
     except Exception as e:
         print("API失敗:", e)
         return None
-
-def send(msg):
-    requests.post(WEBHOOK_URL, json={"content": msg})
-
-def main():
-    print("===== 起動確認 =====")
-
-    result = get_fortune()
-
-    if not result:
-        result = "【てんびん座 今日の運勢】\n\n取得失敗（API応答異常）"
-
-    send(result)
-    print("送信完了")
-
-if __name__ == "__main__":
-    main()
