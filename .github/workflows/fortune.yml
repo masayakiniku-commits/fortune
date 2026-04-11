@@ -1,9 +1,12 @@
 name: fortune-bot
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '0 22 * * *'
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   run:
@@ -12,13 +15,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Pythonセットアップ
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - run: pip install requests beautifulsoup4
+      - name: ライブラリインストール
+        run: pip install requests beautifulsoup4
 
-      - name: run
+      - name: 実行
+        run: python main.py
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        run: python main.py
